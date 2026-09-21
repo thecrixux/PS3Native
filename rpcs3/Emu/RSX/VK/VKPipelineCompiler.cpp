@@ -305,7 +305,7 @@ namespace vk
 
 		// Create the shared pipeline cache
 		VkPipelineCacheCreateInfo drv_cache_info{ VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
-		vkCreatePipelineCache(*g_render_device, &drv_cache_info, nullptr, &g_pipeline_cache);
+		VK_GET_SYMBOL(vkCreatePipelineCache)(*g_render_device, &drv_cache_info, nullptr, &g_pipeline_cache);
 
 		// Create the thread pool
 		g_pipe_compilers = std::make_unique<named_thread_group<pipe_compiler>>("RSX.W", num_worker_threads);
@@ -324,7 +324,7 @@ namespace vk
 
 		if (g_pipeline_cache)
 		{
-			vkDestroyPipelineCache(*g_render_device, g_pipeline_cache, nullptr);
+			VK_GET_SYMBOL(vkDestroyPipelineCache)(*g_render_device, g_pipeline_cache, nullptr);
 			g_pipeline_cache = VK_NULL_HANDLE;
 		}
 	}

@@ -218,7 +218,7 @@ namespace vk
 			case driver_vendor::HONEYKRISP:
 			case driver_vendor::PANVK:
 			case driver_vendor::ARM_MALI:
-			case driver_vendor::ADRENO:
+			case driver_vendor::QUALCOMM:
 			case driver_vendor::TURNIP:
 			case driver_vendor::POWERVR:
 			case driver_vendor::XCLIPSE:

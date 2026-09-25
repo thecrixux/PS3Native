@@ -177,7 +177,12 @@ namespace vk
 		const gpu_formats_support& get_formats_support() const { return m_formats_support; }
 		const gpu_shader_types_support& get_shader_types_support() const { return pgpu->shader_types_support; }
 		const custom_border_color_features& get_custom_border_color_support() const { return pgpu->custom_border_color_support; }
-		const multidraw_features get_multidraw_support() const { return pgpu->multidraw_support; }
+		const multidraw_features get_multidraw_support() const
+		{
+			multidraw_features result = pgpu->multidraw_support;
+			result.supported = result.supported && _vkCmdDrawMultiEXT && _vkCmdDrawMultiIndexedEXT;
+			return result;
+		}
 
 		bool get_shader_stencil_export_support() const { return pgpu->optional_features_support.shader_stencil_export; }
 		bool get_depth_bounds_support() const { return pgpu->features.depthBounds != VK_FALSE; }

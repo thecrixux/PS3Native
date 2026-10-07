@@ -970,19 +970,19 @@ namespace
 {
 	constexpr u32 max_expanded_vertices = 65536;
 
-	const std::vector<u16>& quad_index_table()
+	const std::vector<u32>& quad_index_table()
 	{
-		static const std::vector<u16> table = []
+		static const std::vector<u32> table = []
 		{
-			std::vector<u16> v(max_expanded_vertices / 4 * 6);
+			std::vector<u32> v(max_expanded_vertices / 4 * 6);
 			for (u32 i = 0; i < max_expanded_vertices / 4; i++)
 			{
-				v[6 * i + 0] = static_cast<u16>(4 * i + 0);
-				v[6 * i + 1] = static_cast<u16>(4 * i + 1);
-				v[6 * i + 2] = static_cast<u16>(4 * i + 2);
-				v[6 * i + 3] = static_cast<u16>(4 * i + 2);
-				v[6 * i + 4] = static_cast<u16>(4 * i + 3);
-				v[6 * i + 5] = static_cast<u16>(4 * i + 0);
+				v[6 * i + 0] = 4 * i + 0;
+				v[6 * i + 1] = 4 * i + 1;
+				v[6 * i + 2] = 4 * i + 2;
+				v[6 * i + 3] = 4 * i + 2;
+				v[6 * i + 4] = 4 * i + 3;
+				v[6 * i + 5] = 4 * i + 0;
 			}
 			return v;
 		}();
@@ -990,16 +990,16 @@ namespace
 		return table;
 	}
 
-	const std::vector<u16>& fan_index_table()
+	const std::vector<u32>& fan_index_table()
 	{
-		static const std::vector<u16> table = []
+		static const std::vector<u32> table = []
 		{
-			std::vector<u16> v((max_expanded_vertices - 2) * 3);
+			std::vector<u32> v((max_expanded_vertices - 2) * 3);
 			for (u32 i = 0; i < max_expanded_vertices - 2; i++)
 			{
 				v[3 * i + 0] = 0;
-				v[3 * i + 1] = static_cast<u16>(i + 1);
-				v[3 * i + 2] = static_cast<u16>(i + 2);
+				v[3 * i + 1] = i + 1;
+				v[3 * i + 2] = i + 2;
 			}
 			return v;
 		}();
@@ -1022,7 +1022,7 @@ void write_index_array_for_non_indexed_non_native_primitive_to_buffer(char* dst,
 	{
 		if (count >= 2 && count <= max_expanded_vertices) [[likely]]
 		{
-			std::memcpy(typedDst, fan_index_table().data(), (count - 2) * 3 * sizeof(u16));
+			std::memcpy(typedDst, fan_index_table().data(), (count - 2) * 3 * sizeof(u32));
 			return;
 		}
 
@@ -1040,7 +1040,7 @@ void write_index_array_for_non_indexed_non_native_primitive_to_buffer(char* dst,
 
 		if (count <= max_expanded_vertices) [[likely]]
 		{
-			std::memcpy(typedDst, quad_index_table().data(), quads * 6 * sizeof(u16));
+			std::memcpy(typedDst, quad_index_table().data(), quads * 6 * sizeof(u32));
 			return;
 		}
 

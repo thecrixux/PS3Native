@@ -1,6 +1,7 @@
 #pragma once
 
 #include "overlays.h"
+#include <chrono>
 #include "overlay_progress_bar.hpp"
 #include "Emu/Cell/Modules/cellMsgDialog.h"
 
@@ -30,6 +31,8 @@ namespace rsx
 			bool cancel_only = false;
 
 			bool custom_background_allowed = false;
+			std::chrono::steady_clock::time_point next_background_search{};
+			bool background_missing_logged = false;
 			u32 background_blur_strength = 0;
 			u32 background_darkening_strength = 0;
 			std::unique_ptr<image_info> background_image;

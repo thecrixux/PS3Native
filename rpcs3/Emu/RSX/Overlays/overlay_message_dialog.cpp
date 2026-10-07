@@ -350,24 +350,41 @@ namespace rsx
 				bool dirty = std::exchange(background_blur_strength, g_cfg.video.shader_preloading_dialog.blur_strength.get()) != background_blur_strength;
 				dirty     |= std::exchange(background_darkening_strength, g_cfg.video.shader_preloading_dialog.darkening_strength.get()) != background_darkening_strength;
 
-				if (!background_image)
+				const auto now = std::chrono::steady_clock::now();
+				if (!background_image && now >= next_background_search)
 				{
+					// Mounts can become available after the dialog is constructed.
+					// Retry without probing the filesystem on every overlay frame.
+					next_background_search = now + std::chrono::seconds(1);
 					// Search for any useable background picture in the given order
 					game_content_type content_type = game_content_type::background_picture;
 
-					for (game_content_type type : { game_content_type::background_picture, game_content_type::overlay_picture, game_content_type::content_icon })
+					for (game_content_type type : { game_content_type::background_picture, game_content_type::background_picture_2, game_content_type::overlay_picture, game_content_type::content_icon })
 					{
 						if (const std::string picture_path = rpcs3::utils::get_game_content_path(type); !picture_path.empty())
 						{
+							auto candidate = std::make_unique<image_info>(picture_path);
+							if (!candidate->get_data())
+							{
+								if (!background_missing_logged) rsx_log.warning("Loading background could not be decoded: %s", picture_path);
+								continue;
+							}
 							content_type = type;
-							background_image = std::make_unique<image_info>(picture_path);
-							dirty |= !!background_image->get_data();
+							background_image = std::move(candidate);
+							dirty = true;
+							rsx_log.notice("Loading background: %s", picture_path);
 							break;
 						}
 					}
 
-					// Search for an overlay picture in the same dir in case we found a real background picture
-					if (background_image && !background_overlay_image && content_type == game_content_type::background_picture)
+					if (!background_image && !background_missing_logged)
+					{
+						rsx_log.notice("Loading background unavailable for %s (SFO: %s, disc: %s); will retry when game content is mounted", Emu.GetTitleID(), Emu.GetSfoDir(false), Emu.GetSfoDir(true));
+						background_missing_logged = true;
+					}
+
+					// Search for an overlay picture in case we found a real background picture
+					if (background_image && !background_overlay_image && (content_type == game_content_type::background_picture || content_type == game_content_type::background_picture_2))
 					{
 						if (const std::string picture_path = rpcs3::utils::get_game_content_path(game_content_type::overlay_picture); !picture_path.empty())
 						{

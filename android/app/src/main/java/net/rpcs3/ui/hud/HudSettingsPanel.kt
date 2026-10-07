@@ -125,5 +125,6 @@ fun HudSettingsPanel(modifier: Modifier = Modifier) {
                 )
             }
         }
+        BenchmarkPanel()
     }
 }

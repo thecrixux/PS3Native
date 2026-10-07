@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hud_element_rsx">Carga del hilo de emulación RSX</string>
+    <string name="benchmark_title">Medición de rendimiento</string>
+    <string name="benchmark_hint">Inicia al llegar a tu escena de prueba. Cierra el menú, juega 60 segundos, detén y exporta. Usa la misma escena, resolución, driver, HUD y ajustes de generación de fotogramas en cada build. Guarda hasta 60.000 intervalos de fotograma en memoria.</string>
+    <string name="benchmark_start">Iniciar medición</string>
+    <string name="benchmark_stop">Detener medición</string>
+    <string name="benchmark_export">Exportar último ZIP</string>
+    <string name="benchmark_not_running">Inicia la medición con el juego en marcha, sin pausa.</string>
+    <string name="benchmark_recording">Midiendo. Cierra este menú para jugar tu escena de prueba.</string>
+    <string name="benchmark_busy">Procesando…</string>
+    <string name="benchmark_result">%1$d fotogramas · %2$.1f FPS · p99 %3$.2f ms</string>
+    <string name="benchmark_limit">Se alcanzó el límite; se guardaron los primeros 60.000 intervalos.</string>
+    <string name="benchmark_saved">ZIP exportado.</string>
+    <string name="benchmark_error">Error de medición: %1$s</string>
+</resources>

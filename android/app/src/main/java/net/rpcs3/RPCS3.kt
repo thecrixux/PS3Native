@@ -125,6 +125,11 @@ class RPCS3 {
     external fun getTitleId(): String
     external fun perfMetrics(): String
     external fun frameTimeMs(): Float
+    external fun frameGraphEnable(enabled: Boolean)
+    external fun frameGraphDrain(): FloatArray
+    external fun benchmarkContext(): String
+    external fun benchmarkStart(): Boolean
+    external fun benchmarkStop(): String
     external fun supportsCustomDriverLoading() : Boolean
     external fun frameGenImport(fd: Int, cachePath: String): Int
     external fun frameGenState(cachePath: String): String

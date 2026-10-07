@@ -155,7 +155,7 @@ class HudView @JvmOverloads constructor(
         HudElement.Fps -> COLOR_FPS
         HudElement.Frametime -> COLOR_FRAMETIME
         HudElement.Renderer -> COLOR_RENDERER
-        HudElement.Gpu -> COLOR_GPU
+        HudElement.Gpu, HudElement.Rsx -> COLOR_GPU
         HudElement.Cpu -> COLOR_CPU
         HudElement.Ram -> COLOR_RAM
         HudElement.Battery -> COLOR_BATTERY
@@ -341,6 +341,8 @@ class HudView @JvmOverloads constructor(
 
         readouts[HudElement.Gpu]?.text =
             labelled("GPU ", COLOR_GPU, percentValue(sample.gpuPercent))
+        readouts[HudElement.Rsx]?.text =
+            labelled("RSX ", COLOR_GPU, percentValue(sample.rsxPercent))
         readouts[HudElement.Cpu]?.text =
             labelled("CPU ", COLOR_CPU, percentValue(sample.cpuPercent))
 
@@ -373,7 +375,7 @@ class HudView @JvmOverloads constructor(
         val temp = readouts[HudElement.Temperature]
         if (temp != null) {
             if (sample.temperatureC < 0) {
-                temp.text = labelled("TMP ", COLOR_TEMP, unavailable)
+                temp.text = labelled("BAT °C ", COLOR_TEMP, unavailable)
             } else {
                 val valueColor = when {
                     sample.temperatureC >= 45 -> COLOR_TEMP_HOT

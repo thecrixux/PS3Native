@@ -455,11 +455,11 @@
 
     <string name="hud_element_renderer">Renderer</string>
     <string name="hud_element_gpu">GPU load</string>
-    <string name="hud_element_cpu">CPU load</string>
-    <string name="hud_element_ram">Memory</string>
+    <string name="hud_element_cpu">Device CPU load</string>
+    <string name="hud_element_ram">Device memory</string>
     <string name="hud_element_battery">Battery</string>
     <string name="hud_element_power">Power draw</string>
-    <string name="hud_element_temperature">Temperature</string>
+    <string name="hud_element_temperature">Battery temperature</string>
     <string name="hud_element_fps">Frame rate</string>
     <string name="hud_element_frametime">Frame time</string>
 

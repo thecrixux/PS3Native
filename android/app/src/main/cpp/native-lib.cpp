@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "frame_metrics.hpp"
 
 #include "Crypto/unpkg.h"
 #include "Crypto/unself.h"
@@ -99,6 +100,7 @@ struct AtExit {
 static bool g_initialized;
 static std::atomic<ANativeWindow *> g_native_window;
 static std::atomic<int> g_surface_hosts{0};
+static android_metrics::FrameMetrics g_frame_metrics;
 static std::atomic<float> g_hud_fps{0.f};
 static std::atomic<float> g_hud_frametime{0.f};
 static std::atomic<float> g_hud_last_frame_ms{0.f};
@@ -161,6 +163,7 @@ struct GraphicsFrame : GSFrameBase {
   std::chrono::steady_clock::time_point fpsWindowStart{};
   std::chrono::steady_clock::time_point lastFlip{};
   u32 fpsFrames = 0;
+  u64 pauseTime = 0;
 
   ~GraphicsFrame() {
     g_hud_fps.store(0.f);
@@ -216,7 +219,20 @@ struct GraphicsFrame : GSFrameBase {
 
     const auto now = std::chrono::steady_clock::now();
 
-    if (fpsWindowStart.time_since_epoch().count() == 0) {
+    const auto paused = Emu.GetPauseTime();
+    if (!Emu.IsRunning()) {
+      fpsWindowStart = {};
+      lastFlip = {};
+      fpsFrames = 0;
+      g_hud_fps.store(0.f);
+      g_hud_frametime.store(0.f);
+      g_hud_last_frame_ms.store(0.f);
+      return;
+    }
+
+    if (fpsWindowStart.time_since_epoch().count() == 0 || pauseTime != paused) {
+      pauseTime = paused;
+      fpsFrames = 0;
       fpsWindowStart = now;
       lastFlip = now;
       return;
@@ -226,8 +242,9 @@ struct GraphicsFrame : GSFrameBase {
         std::chrono::duration<double, std::milli>(now - lastFlip).count();
     lastFlip = now;
 
-    if (sinceLast > 0.0 && sinceLast < 500.0) {
+    if (sinceLast > 0.0) {
       g_hud_last_frame_ms.store(static_cast<float>(sinceLast));
+      g_frame_metrics.record(sinceLast);
     }
 
     fpsFrames++;
@@ -1892,15 +1909,63 @@ Java_net_rpcs3_RPCS3_frameTimeMs(JNIEnv *, jobject) {
   return g_hud_last_frame_ms.load();
 }
 
+extern "C" JNIEXPORT void JNICALL
+Java_net_rpcs3_RPCS3_frameGraphEnable(JNIEnv *, jobject, jboolean enabled) {
+  g_frame_metrics.enable_graph(enabled);
+}
+
+extern "C" JNIEXPORT jfloatArray JNICALL
+Java_net_rpcs3_RPCS3_frameGraphDrain(JNIEnv *env, jobject) {
+  const auto samples = g_frame_metrics.drain_graph();
+  auto result = env->NewFloatArray(static_cast<jsize>(samples.size()));
+  if (result && !samples.empty()) {
+    env->SetFloatArrayRegion(result, 0, static_cast<jsize>(samples.size()), samples.data());
+  }
+  return result;
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_net_rpcs3_RPCS3_benchmarkContext(JNIEnv *env, jobject) {
+  // Snapshot the running configuration rather than a separately edited preset.
+  nlohmann::json context;
+  context["build"] = rpcs3::get_verbose_version();
+  context["title_id"] = Emu.GetTitleID();
+  context["runtime_config_yaml"] = g_cfg.to_string();
+  context["display_refresh_hz"] = vk::frame_generation_refresh_rate();
+  return wrap(env, context.dump());
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_net_rpcs3_RPCS3_benchmarkStart(JNIEnv *, jobject) {
+  return Emu.IsRunning() && g_frame_metrics.start_capture();
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_net_rpcs3_RPCS3_benchmarkStop(JNIEnv *env, jobject) {
+  const auto capture = g_frame_metrics.stop_capture();
+  std::string json = fmt::format(
+      R"({"frame_count":%u,"duration_ms":%.6f,"mean_ms":%.6f,"fps":%.6f,)"
+      R"("p95_ms":%.6f,"p99_ms":%.6f,"max_ms":%.6f,"limit_reached":%s,"frames":[)",
+      capture.frames.size(), capture.duration_ms, capture.mean_ms, capture.fps,
+      capture.p95_ms, capture.p99_ms, capture.max_ms,
+      capture.limit_reached ? "true" : "false");
+  for (std::size_t i = 0; i < capture.frames.size(); ++i) {
+    if (i) json += ',';
+    fmt::append(json, "%.6f", capture.frames[i]);
+  }
+  json += "]}";
+  return wrap(env, json);
+}
+
 extern "C" JNIEXPORT jstring JNICALL
 Java_net_rpcs3_RPCS3_perfMetrics(JNIEnv *env, jobject) {
-  u32 rsxLoad = 0;
+  s32 rsxLoad = -1;
 
   if (auto renderer = rsx::get_current_renderer()) {
     rsxLoad = renderer->get_load();
   }
 
-  return wrap(env, fmt::format(R"({"fps":%.2f,"frametime":%.3f,"rsxLoad":%u,)"
+  return wrap(env, fmt::format(R"({"fps":%.2f,"frametime":%.3f,"rsxLoad":%d,)"
                                R"("renderer":"%s","presented":%u,"generated":%u})",
                                g_hud_fps.load(), g_hud_frametime.load(),
                                rsxLoad, g_cfg.video.renderer.to_string(),

@@ -608,7 +608,7 @@ namespace rpcs3::utils
 		}
 
 		const bool check_disc = !disc_dir.empty();
-		const bool check_hdd0 = !sfo_dir.empty() && !check_disc;
+		const bool check_hdd0 = !sfo_dir.empty();
 
 		const auto find_content = [&](std::string_view name, std::string_view extension) -> std::string
 		{
@@ -631,20 +631,20 @@ namespace rpcs3::utils
 			{
 				const std::string filename = fmt::format("/%s%s.%s", name, localized ? locale_suffix : std::string(), extension);
 
-				// Check content on hdd0 first
-				if (check_hdd0)
+				// Check content on disc
+				if (check_disc)
 				{
-					if (std::string path = sfo_dir + filename; file_exists(path))
+					if (std::string path = disc_dir + filename; file_exists(path))
 					{
 						if (in_archive) *in_archive = archive && archive->exists(path);
 						return path;
 					}
 				}
 
-				// Check content on disc
-				if (check_disc)
+				// Fall back to the SFO directory (installed title or update)
+				if (check_hdd0)
 				{
-					if (std::string path = disc_dir + filename; file_exists(path))
+					if (std::string path = sfo_dir + filename; file_exists(path))
 					{
 						if (in_archive) *in_archive = archive && archive->exists(path);
 						return path;

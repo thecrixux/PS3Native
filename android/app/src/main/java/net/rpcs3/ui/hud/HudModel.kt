@@ -13,7 +13,8 @@ enum class HudElement(val key: String, val labelRes: Int, val enabledByDefault: 
     Power("power", R.string.hud_element_power, false),
     Temperature("temp", R.string.hud_element_temperature, false),
     Fps("fps", R.string.hud_element_fps, true),
-    Frametime("frametime", R.string.hud_element_frametime, true)
+    Frametime("frametime", R.string.hud_element_frametime, true),
+    Rsx("rsx", R.string.hud_element_rsx, false)
 }
 
 enum class HudMode(val horizontal: Boolean, val backdrop: Boolean, val labelRes: Int, val detailRes: Int) {
@@ -41,6 +42,7 @@ data class HudSample(
     val renderer: String = "",
     val cpuPercent: Int = -1,
     val gpuPercent: Int = -1,
+    val rsxPercent: Int = -1,
     val ramUsedMb: Int = -1,
     val ramTotalMb: Int = -1,
     val batteryPercent: Int = -1,

@@ -54,50 +54,30 @@ class DeviceStatsReader(context: Context) {
     )
 
     private fun readCpuPercent(): Int {
-        val stat = readNode("/proc/stat") ?: return readCpuPercentFromClocks()
+        val stat = readNode("/proc/stat") ?: return -1
         val line = stat.lineSequence().firstOrNull { it.startsWith("cpu ") }
-            ?: return readCpuPercentFromClocks()
+            ?: return -1
 
         val fields = line.split(Regex("\\s+")).drop(1).mapNotNull { it.toLongOrNull() }
         if (fields.size < 4) {
-            return readCpuPercentFromClocks()
+            return -1
         }
 
         val idle = fields[3] + (fields.getOrNull(4) ?: 0L)
-        val total = fields.sum()
+        // Linux guest counters are already included in user/nice.
+        val total = fields.take(8).sum()
+        val hadBaseline = lastCpuTotal > 0L
         val deltaTotal = total - lastCpuTotal
         val deltaIdle = idle - lastCpuIdle
 
         lastCpuTotal = total
         lastCpuIdle = idle
 
-        if (deltaTotal <= 0L) {
+        if (!hadBaseline || deltaTotal <= 0L || deltaIdle < 0L) {
             return -1
         }
 
         return (100.0 * (deltaTotal - deltaIdle) / deltaTotal).toInt().coerceIn(0, 100)
-    }
-
-    private fun readCpuPercentFromClocks(): Int {
-        var current = 0L
-        var maximum = 0L
-        var cpu = 0
-
-        while (cpu < 32) {
-            val base = "/sys/devices/system/cpu/cpu$cpu/cpufreq"
-            val max = parseLeadingInt(readNode("$base/cpuinfo_max_freq")) ?: break
-            val now = parseLeadingInt(readNode("$base/scaling_cur_freq")) ?: 0
-
-            current += now.toLong()
-            maximum += max.toLong()
-            cpu++
-        }
-
-        if (maximum <= 0L) {
-            return -1
-        }
-
-        return (100.0 * current / maximum).toInt().coerceIn(0, 100)
     }
 
     private fun readGpuPercent(): Int {
@@ -181,7 +161,6 @@ class DeviceStatsReader(context: Context) {
             return tenths / 10
         }
 
-        val thermal = parseLeadingInt(readNode("/sys/class/thermal/thermal_zone0/temp")) ?: return -1
-        return if (thermal > 1000) thermal / 1000 else thermal
+        return -1
     }
 }

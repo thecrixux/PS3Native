@@ -15,6 +15,8 @@ import net.rpcs3.framegen.FrameGen
 import net.rpcs3.framegen.FrameGenPrefs
 import net.rpcs3.ui.drawer.InGameDrawer
 import net.rpcs3.ui.hud.DeviceStatsReader
+import net.rpcs3.ui.hud.BenchmarkCapture
+import net.rpcs3.ui.hud.HudElement
 import net.rpcs3.ui.hud.HudPrefs
 import net.rpcs3.overlay.PS_HOLD_MS
 import org.json.JSONObject
@@ -408,6 +410,7 @@ class RPCS3Activity : ComponentActivity() {
             binding.hudView.restorePosition()
         }
 
+        RPCS3.instance.frameGraphEnable(HudPrefs.isElementEnabled(prefs, HudElement.Frametime))
         startPump()
     }
 
@@ -459,11 +462,7 @@ class RPCS3Activity : ComponentActivity() {
                         outputFps = outputFps,
                         frametimeMs = emu?.optDouble("frametime", 0.0)?.toFloat() ?: 0f,
                         renderer = emu?.optString("renderer").orEmpty(),
-                        gpuPercent = if (device.gpuPercent >= 0) {
-                            device.gpuPercent
-                        } else {
-                            emu?.optInt("rsxLoad", -1) ?: -1
-                        }
+                        rsxPercent = emu?.optInt("rsxLoad", -1) ?: -1
                     )
                 )
 
@@ -473,10 +472,9 @@ class RPCS3Activity : ComponentActivity() {
 
         hudGraphPump = object : Runnable {
             override fun run() {
-                val ms = runCatching { RPCS3.instance.frameTimeMs() }.getOrDefault(0f)
-                if (ms > 0f) {
-                    binding.hudView.addFrameSample(ms)
-                }
+                val samples = runCatching { RPCS3.instance.frameGraphDrain() }
+                    .getOrDefault(floatArrayOf())
+                samples.forEach { binding.hudView.addFrameSample(it) }
                 hudHandler.postDelayed(this, HUD_GRAPH_MS)
             }
         }
@@ -486,6 +484,7 @@ class RPCS3Activity : ComponentActivity() {
     }
 
     private fun stopPump() {
+        RPCS3.instance.frameGraphEnable(false)
         hudPump?.let { hudHandler.removeCallbacks(it) }
         hudGraphPump?.let { hudHandler.removeCallbacks(it) }
         hudPump = null
@@ -552,6 +551,7 @@ class RPCS3Activity : ComponentActivity() {
         if (CpuSupport.missingFeatures != null) {
             return
         }
+        BenchmarkCapture.finish(this)
         stopHud()
         stopOverlay()
         stopFrameGenDisplay()

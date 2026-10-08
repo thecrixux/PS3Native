@@ -1,81 +1,141 @@
-PS3Native
-=========
+<div align="center">
 
-A PlayStation 3 emulator for Android, built directly on top of current upstream [RPCS3](https://github.com/RPCS3/rpcs3).
+# DukePS3
 
-This fork tracks the real RPCS3 tree rather than a snapshot. The archived [RPCS3-Android](https://github.com/RPCS3/rpcs3-android) port is folded in at [`android/`](android), rebased onto current upstream, and carried forward with additional fixes and interface work contributed by the [WinNative](https://github.com/WinNative-Emu) developers.
+**PlayStation 3 emulation for Android — built on RPCS3, tuned through real-device testing.**
 
-## What this is
+![Version](https://img.shields.io/badge/Version-1.0.0-FFB800?style=flat-square)
+![Android](https://img.shields.io/badge/Android-12%2B-18181B?style=flat-square&logo=android&logoColor=FFB800)
+![Architecture](https://img.shields.io/badge/Architecture-ARM64-18181B?style=flat-square)
+![Renderer](https://img.shields.io/badge/Renderer-Vulkan-18181B?style=flat-square)
+![Frame generation](https://img.shields.io/badge/Frame_Generation-LSFG_%2B_DIS-FF8A00?style=flat-square)
 
-Upstream RPCS3 targets desktop platforms. The Android port was published separately and then went stale against a moving upstream. The goal here is a single tree where:
+[Releases](https://github.com/thecrixux/DukePS3/releases) · [Source code](https://github.com/thecrixux/DukePS3)
 
-* the emulator core is unmodified upstream RPCS3, so improvements land by merging upstream rather than by re-porting;
-* the Android front end lives beside it in `android/` and builds an APK from that same source;
-* Android-specific defects — threading, shutdown, configuration persistence, on-screen controls — are fixed in place;
-* the interface is a Compose Material 3 front end sharing the design language of WinNative.
+</div>
 
-Everything below `android/` is additive. The upstream history is preserved intact.
+DukePS3 is an Android-focused fork of [RPCS3](https://github.com/RPCS3/rpcs3), developed from PS3Native and the original RPCS3-Android port. Its priorities are **compatibility, stability, frame pacing and practical performance on both Snapdragon/Adreno and MediaTek/Mali**.
 
-## State
+The RPCS3 core and Android front end live in the same source tree. Upstream improvements are merged alongside Android-specific fixes and a Compose Material 3 interface with DukePS3's own identity.
 
-Working:
+## What DukePS3 offers
 
-* boots and runs commercial titles at full speed on current Snapdragon hardware
-* Vulkan renderer, PPU/SPU recompilers via a cross-compiled LLVM
-* per-game configuration, backed by RPCS3's own custom-config mechanism
-* generated PS2-style on-screen controls with sticky presses and reserved touch zones
-* in-game menu with pause/resume, settings and shutdown
-* game library with a built-in compatibility browser
+| Area | Features |
+| --- | --- |
+| **Emulation** | Vulkan rendering, LLVM-based PPU/SPU recompilers and reusable compilation caches. |
+| **Frame generation** | Two Vulkan engines: proprietary Lossless Scaling shaders through LSFG, or built-in, free DIS optical flow. |
+| **Games and settings** | Searchable library, compatibility browser, global/per-game settings, game-update sources and patch management. |
+| **Graphics and drivers** | Separate PS3 video mode and internal render scale; custom driver import and driver repositories where supported. |
+| **Playing** | Editable on-screen controls and an in-game menu with pause/resume, settings and shutdown. |
+| **Performance tools** | Customizable HUD, frame-time graph, separate game and output FPS, and exportable benchmark captures. |
+| **Audio and diagnostics** | Automatic/AAudio/OpenSL ES output selection, log sharing, system information and WAV + log export. |
+| **Interface** | Duke Gold dark theme, illustrated welcome screen, branded navigation menu and adaptive/themed launcher icons. |
 
-Not finished:
+## Recent improvements
 
-* netplay has never been verified end to end; RPCN has no sign-in interface on Android
-* an intermittent crash in the render queue is still being tracked
-* audio backend selection is limited
+- **Faster first-start PPU preparation:** duplicated directory scans and executable checks are avoided. LLVM worker creation respects the existing memory budget, and compilation stages now report their timings. Faster starts have been reported in device testing; the saving depends on the game and cache state.
+- **Reusable caches:** later launches keep using previously compiled modules instead of rebuilding them unnecessarily.
+- **Graphics fixes:** corrections for corrupted rendering after upstream updates, plus a clearer distinction between the game's video mode and internal resolution scaling.
+- **More detail on Mali:** G-Force has been tested with a 720p video mode and 150% render scale, retaining a reported 60 FPS in the reference scene.
+- **Smoother free frame generation:** DIS incorporates adapted OpenFlow optimizations, with improvements to its Vulkan presentation path and frame pacing. G-Force's perceived smoothness improved in Adreno 710 testing after these changes.
+- **Better measurements:** improved FPS/frame-time sampling, a separate `OUT` presentation-rate indicator and benchmark exports that exclude generated frames from the game-FPS measurement.
+- **Loading-screen artwork restored:** the game's background image now appears during module preparation instead of a black background.
+- **MediaTek audio improvements:** producer-side changes substantially reduced intermittent artifacts on the Dimensity 8300 test device. A small residual issue remains pending.
+- **Easier troubleshooting:** benchmark archives contain `summary.json` and `frames.csv`; audio capture export packages the latest completed WAV with the current log.
 
-## Building
+## Tested on real hardware
 
-The Android build needs LLVM and FFmpeg cross-compiled for `arm64-v8a` first. Both scripts fetch their own sources and write into `android/prebuilt/`:
+G-Force is the current reference game, tested repeatedly in the same scene by the maintainer.
+
+| Device | Reported results |
+| --- | --- |
+| **Snapdragon / Adreno 710** | Around **35–42 game FPS at native resolution** in the reference tests; improved smoothness with the optimized DIS engine. Audio reported clean. |
+| **POCO X6 Pro / Dimensity 8300 / Mali** | Around **60 game FPS in the reference scene**, including testing at **720p + 150% render scale**. Previous resolution-related corruption was resolved in that test. |
+
+These are observations from specific builds, settings and one game, rather than a compatibility guarantee for every title or device. Game FPS and frame-generated output FPS are different measurements. Drivers, available memory and thermal conditions affect the results. LSFG integration is available, but it was not part of these maintainer tests because the proprietary shaders were not available.
+
+## Frame generation: choose your engine
+
+| Engine | What you need | What is included |
+| --- | --- | --- |
+| **DIS — Dense Inverse Search** | A compatible GPU/driver. **No purchase or DLL required.** | The free optical-flow engine and its shaders are built into the app. |
+| **LSFG — Lossless Scaling** | Your own licensed copy of Lossless Scaling and a compatible `Lossless.dll`. | Vulkan integration and shader-import tools. **The proprietary DLL/shaders are not distributed.** |
+
+Open **Frame Gen** from the library menu or the in-game menu. Select the engine, choose a preset and enable generation. DIS provides **Light, Fast, Balanced and Quality** presets; both engines expose multipliers **2×/3×/4×** or target rates **60/90/120 FPS**.
+
+LSFG imports shader data from the DLL, translates it when required and caches it locally. The DLL is parsed as data, not executed.
+
+Frame generation can improve visual smoothness, but it adds GPU work and latency. A higher output number does not increase the game's simulation speed or guarantee better responsiveness. The HUD's `OUT` indicator reports presentation rate, including real and interpolated frames; it is not a count of generated frames alone.
+
+The built-in DIS engine comes from the work of **qwertypower (DEVAR Entertainment LLC)** in WinNative, now named **OpenFlow**, with roots in OpenCV's DISOpticalFlow and Till Kroeger's OF_DIS. We adapt its optimizations to RPCS3's Vulkan renderer; the hardware motion-estimation path is not included. See the [full credits and source lineage](#credits) at the end of this page.
+
+## Getting started
+
+1. Install the APK and complete storage access and firmware setup. **Games and PS3 firmware are not included.**
+2. Add a game folder, boot a disc image or install a package using the library tools.
+3. Start with the default graphics settings. To test higher detail, keep **PS3 video mode at 720p** and adjust **Render scale**. At a 1280×720 base, 150% corresponds to 1920×1080; actual scaling depends on the game and its surfaces.
+4. Try DIS from **Frame Gen** if you want the built-in free engine, then compare the same scene with generation disabled and enabled.
+
+**Requirements:** Android 12 or newer, an ARM64 device with the CPU features required by the build, and a compatible Vulkan driver. The current CPU check covers LSE atomics, FP16, RDM and dot-product support. Available RAM influences how many compilation workers can run at once.
+
+**Package:** `com.crixux.dukeps3` · **App version:** `1.0.0`.
+
+Changing from the old PS3Native package creates a separate Android installation. Existing saves, firmware, caches and private preferences are not migrated automatically; keep the old app until any needed data has been copied and checked.
+
+## Measure and report
+
+The HUD can show FPS, frame times, RAM and supported device sensors. A sensor that the device/driver does not expose may show `N/A`.
+
+For useful comparisons, keep the game, scene, settings and temperature conditions consistent. Benchmark captures record **RSX flip intervals**, exclude loading/pauses and generated frames, and export a JSON summary plus CSV frame timings. For first-start testing, distinguish a PPU rebuild from a later cached launch.
+
+To investigate sound, enable **Dump to file**, reproduce the problem, stop the game normally and use **Debug → Export audio capture**. This exports the completed WAV and current log. Leave dumping disabled for normal play when a capture is not needed.
+
+Reports are most useful with the game/title ID, device, driver, settings, reproduction steps and a log or benchmark archive.
+
+## Pending work
+
+- Expand compatibility testing beyond G-Force.
+- Resolve the small residual audio artifacts on MediaTek.
+- Continue checking driver and frame-generation engine availability across different GPUs.
+- RPCN still has no Android sign-in interface; end-to-end netplay is not verified.
+
+## Build from source
+
+The build uses **JDK 17, Android SDK 35, NDK 29.0.14206865 and CMake 3.31.6**, with LLVM and FFmpeg prepared for `arm64-v8a`.
+
+From the repository root, in an environment that can run the Bash scripts:
 
 ```bash
+git submodule update --init --recursive
 cd android
 ./build-ffmpeg-android.sh
 ./build-llvm-android.sh
 ./gradlew assembleStandardDebug
 ```
 
-Requirements: JDK 17, Android NDK 29, CMake 3.31, and a checkout with submodules (`git submodule update --init --recursive`).
+With the dependencies and SDK already prepared, PowerShell can build with:
 
-The dependency scripts are the slow part and only need running when they change. `android/prebuilt/` is not tracked.
+```powershell
+cd android
+.\gradlew.bat assembleStandardDebug
+```
 
-To build in CI, run the **Android APK** workflow manually from the Actions tab. It is dispatch-only, caches the cross-compiled dependencies against the build-script hashes, and shares a ccache across both the dependency and application builds, so a run that only touches app code reuses everything else.
+The dependencies do not need rebuilding for ordinary interface or documentation changes. APKs are written under `android/app/build/outputs/apk/`.
 
-## Flavors
-
-The same APK is published under several package names. Some Android vendors gate their high-performance CPU and GPU governors on an allowlist of package names, so a build installed under one of those identifiers is scheduled more aggressively. Pick whichever performs best on your device.
-
-| Flavor | Package name | Gradle task |
-| --- | --- | --- |
-| `standard` | `com.ps3native.standard` | `assembleStandardDebug` |
-| `antutu` | `com.antutu.ABenchMark` | `assembleAntutuDebug` |
-| `ludashi` | `com.ludashi.benchmark` | `assembleLudashiDebug` |
-| `pubg` | `com.tencent.ig` | `assemblePubgDebug` |
-
-All four are the same emulator and carry the same name and icon. Because a package name is unique on a device, a flavor cannot be installed alongside the real application that owns that identifier, and only `standard` is suitable for distribution through an app store.
-
-## Frame generation
-
-The Vulkan presenter can interpolate extra frames between the ones the RSX actually renders, using the Lossless Scaling interpolation shaders.
-
-**The shaders are not redistributed and nothing ships with the APK.** You point the app at your own copy of `Lossless.dll`; its PE resource tree is walked for the shader blobs, which are translated to SPIR-V once and cached in app storage. The DLL is parsed as data and never executed. Import it from **Frame Gen** in the library menu or the in-game menu's Frame Gen tab.
-
-Interpolation costs one extra frame of latency — holding the newer frame back is what makes interpolating between two of them possible. It buys smoothness, not response.
+The normal flavor is `standard`. Legacy task names `antutu`, `ludashi` and `pubg` remain available for build-script compatibility, but **all current flavors use `com.crixux.dukeps3`**.
 
 ## Credits
 
+DukePS3 builds on the work of RPCS3, RPCS3-Android, PS3Native and WinNative/OpenFlow. The attributions and source lineage of the frame-generation components are retained below.
+
 * the [RPCS3](https://github.com/RPCS3/rpcs3) team, for the emulator
+* [PS3Native](https://github.com/maxjivi05/PS3Native), for the Android fork this project builds on
+* [thecrixux](https://github.com/thecrixux), for maintaining DukePS3, its identity and hands-on Android testing
 * the [RPCS3-Android](https://github.com/RPCS3/rpcs3-android) port this build started from
 * the [WinNative](https://github.com/WinNative-Emu) developers, for the interface work and Android fixes
+
+<details>
+<summary><strong>Frame generation credits and source lineage</strong></summary>
 
 ### Frame generation
 
@@ -89,6 +149,19 @@ The interpolation chain in [`rpcs3/Emu/RSX/VK/lsfg/`](rpcs3/Emu/RSX/VK/lsfg) is 
 
 lsfg-vk is MIT, which is compatible with both GPLv2 and GPLv3. The files under `rpcs3/Emu/RSX/VK/lsfg/` descend from Camille LaVey's Eden port rather than from lsfg-vk directly, so they carry its GPL-3.0-or-later terms and those SPDX headers have to survive. The two files there without such a header — `lsfg_dll.*`, which walks the PE resource tree, and `lsfg_dxbc.*`, which bridges to DXVK's translator — were written for the Android side.
 
+The free DIS engine in `rpcs3/Emu/RSX/VK/dis/` is a port of
+**qwertypower (DEVAR Entertainment LLC)**'s GPL-3.0-or-later implementation in
+[WinNative, now named OpenFlow](https://github.com/WinNative-Emu/WinNative/tree/098227e8aea3544210347321ab3a2535bd4c00c4/app/src/main/cpp/openflow).
+The algorithm comes from OpenCV's DISOpticalFlow and Till Kroeger's OF_DIS.
+Our Vulkan port began with PS3Native PR #25. The shared-tile inverse search,
+subsampled propagation and packed SOR coefficients incorporate the author's
+[optimization work in PR #776](https://github.com/WinNative-Emu/WinNative/pull/776)
+(commit `31f0864f31dd013fdce940fe328562766aa898ea`), adapted to this engine's
+existing descriptors. The hardware motion-estimation path is not included.
+These files retain their original copyright and license headers.
+
+</details>
+
 ## License
 
-Most files are licensed under GNU GPL-2.0-only; see [LICENSE](LICENSE). Some files are licensed differently — check the individual file headers. This project is not affiliated with or endorsed by Sony Interactive Entertainment.
+Most files are licensed under **GPL-2.0-only**; see [LICENSE](LICENSE). Other components have their own licenses, including frame-generation files under **GPL-3.0-or-later**. Check the corresponding headers and licenses. DukePS3 is not affiliated with or endorsed by Sony Interactive Entertainment.

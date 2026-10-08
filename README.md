@@ -43,17 +43,6 @@ The RPCS3 core and Android front end live in the same source tree. Upstream impr
 - **MediaTek audio improvements:** producer-side changes substantially reduced intermittent artifacts on the Dimensity 8300 test device. A small residual issue remains pending.
 - **Easier troubleshooting:** benchmark archives contain `summary.json` and `frames.csv`; audio capture export packages the latest completed WAV with the current log.
 
-## Tested on real hardware
-
-G-Force is the current reference game, tested repeatedly in the same scene by the maintainer.
-
-| Device | Reported results |
-| --- | --- |
-| **Snapdragon / Adreno 710** | Around **35–42 game FPS at native resolution** in the reference tests; improved smoothness with the optimized DIS engine. Audio reported clean. |
-| **POCO X6 Pro / Dimensity 8300 / Mali** | Around **60 game FPS in the reference scene**, including testing at **720p + 150% render scale**. Previous resolution-related corruption was resolved in that test. |
-
-These are observations from specific builds, settings and one game, rather than a compatibility guarantee for every title or device. Game FPS and frame-generated output FPS are different measurements. Drivers, available memory and thermal conditions affect the results. LSFG integration is available, but it was not part of these maintainer tests because the proprietary shaders were not available.
-
 ## Frame generation: choose your engine
 
 | Engine | What you need | What is included |
@@ -94,7 +83,7 @@ Reports are most useful with the game/title ID, device, driver, settings, reprod
 
 ## Pending work
 
-- Expand compatibility testing beyond G-Force.
+- Expand compatibility testing
 - Resolve the small residual audio artifacts on MediaTek.
 - Continue checking driver and frame-generation engine availability across different GPUs.
 - RPCN still has no Android sign-in interface; end-to-end netplay is not verified.
